@@ -1,0 +1,10 @@
+5-Fold Cross Validation Results
+
+Fold 1 | Dice: 0.7096 | Hausdorff: 39.1691
+Fold 2 | Dice: 0.6926 | Hausdorff: 40.7391
+Fold 3 | Dice: 0.7021 | Hausdorff: 36.1948
+Fold 4 | Dice: 0.6997 | Hausdorff: 39.2762
+Fold 5 | Dice: 0.6888 | Hausdorff: 38.5824
+
+Average Dice Score: 0.6986
+Average Hausdorff Distance: 38.7923
