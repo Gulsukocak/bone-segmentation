@@ -1,12 +1,12 @@
 # Bone Segmentation in X-ray Images using U-Net
 
-This project implements a U-Net based deep learning model for bone segmentation on X-ray images using PyTorch.
+This project implements a deep learning-based bone segmentation model for X-ray images using PyTorch.
 
-The goal of the project is to segment all bone regions in X-ray images by treating all bones as a single class and the background as another class.
+The objective is to segment all bone regions in X-ray images by treating all bones as a single foreground class and the remaining pixels as background.
 
 ## Dataset
 
-The dataset was provided externally with X-ray images and JSON annotations.
+The dataset was provided externally and contains X-ray images together with bone annotations.
 
 Images and JSON labels:
 
@@ -20,28 +20,62 @@ Dataset files are not included in this repository.
 
 ## Preprocessing
 
-The original JSON annotation files contained multiple bone labels.  
-For this project, all bone labels were merged into a single binary mask:
+The original annotation files contained multiple bone categories.
+
+For this project, all bone classes were merged into a single binary segmentation mask:
 
 - Bone pixels → 1
 - Background pixels → 0
 
 Binary masks were generated using OpenCV polygon operations.
 
+All images and masks were resized to:
+
+```text
+256 × 256
+```
+
+### Data Augmentation
+
+To improve generalization performance, online data augmentation was applied during training:
+
+- Random horizontal flip
+- Random rotation (-10° to +10°)
+
+Data augmentation was applied only during training and disabled during prediction and evaluation.
+
 ## Model
 
-The segmentation model is based on the U-Net architecture implemented with PyTorch.
+The model uses a U-Net architecture with a pre-trained ResNet34 encoder implemented using the `segmentation_models_pytorch` library.
 
-The project includes:
+### Model Configuration
 
-- Dataset preprocessing
-- Binary mask generation
-- U-Net implementation
-- Training and validation
-- Dice Score evaluation
-- Hausdorff Distance evaluation
-- 5-Fold Cross Validation
-- Prediction visualization
+- Architecture: U-Net
+- Encoder: ResNet34
+- Encoder Weights: ImageNet
+- Input Channels: 3
+- Output Classes: 1
+
+### Loss Function
+
+Training was performed using a combination of:
+
+- Binary Cross Entropy Loss (BCE)
+- Dice Loss
+
+Final loss:
+
+```text
+Loss = BCE Loss + Dice Loss
+```
+
+## Training Configuration
+
+- Optimizer: Adam
+- Learning Rate: 0.0001
+- Batch Size: 4
+- Epochs: 20
+- Random Seed: 42
 
 ## Evaluation
 
@@ -49,13 +83,22 @@ The model was evaluated using:
 
 - Dice Score
 - Hausdorff Distance
+- 5-Fold Cross Validation
 
-5-Fold Cross Validation was used during evaluation.
+### Cross Validation Results
 
-Final average results:
+| Fold | Dice Score | Hausdorff Distance |
+|------|------------|-------------------|
+| Fold 1 | 0.9210 | 21.9192 |
+| Fold 2 | 0.9212 | 21.7861 |
+| Fold 3 | 0.9196 | 21.9856 |
+| Fold 4 | 0.9163 | 18.5836 |
+| Fold 5 | 0.9153 | 23.4867 |
 
-- Average Dice Score: 0.6986
-- Average Hausdorff Distance: 38.7923
+### Average Cross Validation Results
+
+- **Average Dice Score:** 0.9187
+- **Average Hausdorff Distance:** 21.5523
 
 Detailed fold results are available in:
 
@@ -63,48 +106,71 @@ Detailed fold results are available in:
 reports/cross_validation_results.txt
 ```
 
-## Prediction Output
+## Training / Validation Performance
 
-Prediction examples are saved in the `outputs` folder.
+Using an 80%-20% train-validation split, the model achieved a **Validation Dice Score of 0.9353** after 20 training epochs.
 
-Example output:
+## Prediction Comparison
 
-```text
-outputs/prediction_result.png
-```
+### Baseline Model
 
-![Prediction Example](outputs/prediction_result.png)
+![Baseline Prediction](outputs/prediction_baseline.png)
+
+### Improved Model
+
+![Improved Prediction](outputs/prediction_result.png)
+
+The improved model significantly reduces segmentation errors and produces boundaries that more closely match the ground-truth masks.
+
+## Conclusion
+
+The combination of transfer learning, data augmentation, and a hybrid BCE + Dice loss function significantly improved segmentation performance.
+
+The model achieved:
+
+- **Average Dice Score:** 0.9187
+- **Average Hausdorff Distance:** 21.5523
+
+across 5-fold cross validation.
+
+Additionally, the model achieved a **Validation Dice Score of 0.9353** using an 80%-20% train-validation split.
+
+These results demonstrate strong segmentation accuracy and good generalization performance for bone segmentation in X-ray images.
 
 ## Project Structure
 
 ```text
 bone-segmentation/
 
+├── data/
+│   ├── images/
+│   └── full_masks/
+│
 ├── outputs/
+│   ├── prediction_baseline.png
+│   └── prediction_result.png
+│
 ├── reports/
+│   └── cross_validation_results.txt
+│
 ├── src/
-
+│   ├── create_masks.py
+│   ├── cross_validation.py
+│   ├── dataset.py
+│   ├── dice_score.py
+│   ├── hausdorff.py
+│   ├── predict.py
+│   ├── train.py
+│   ├── train_val.py
+│   └── unet.py
+│
 ├── README.md
-├── requirements.txt
+└── requirements.txt
 ```
-
-## Source Files
-
-Main source files inside `src/`:
-
-- create_masks.py
-- cross_validation.py
-- dataset.py
-- dice_score.py
-- hausdorff.py
-- predict.py
-- train.py
-- train_val.py
-- unet.py
 
 ## Requirements
 
-Main libraries used in the project:
+Main libraries used:
 
 - PyTorch
 - NumPy
@@ -112,6 +178,7 @@ Main libraries used in the project:
 - Matplotlib
 - Scikit-learn
 - SciPy
+- segmentation-models-pytorch
 
 Install dependencies:
 
