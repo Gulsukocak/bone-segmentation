@@ -1,16 +1,19 @@
 import os
 import cv2
 import torch
+import random
+
 
 from torch.utils.data import Dataset
 
 
 class BoneDataset(Dataset):
 
-    def __init__(self, image_dir, mask_dir):
+    def __init__(self, image_dir, mask_dir, augment=False):
 
         self.image_dir = image_dir
         self.mask_dir = mask_dir
+        self.augment = augment
 
         self.images = sorted(os.listdir(image_dir))
 
@@ -37,6 +40,35 @@ class BoneDataset(Dataset):
 
         image = cv2.resize(image, (256, 256))
         mask = cv2.resize(mask, (256, 256))
+
+        if self.augment:
+
+            if random.random() > 0.5:
+                image = cv2.flip(image, 1)
+                mask = cv2.flip(mask, 1)
+
+            if random.random() > 0.5:
+                angle = random.randint(-10, 10)
+
+                h, w = image.shape[:2]
+
+                M = cv2.getRotationMatrix2D(
+                    (w // 2, h // 2),
+                    angle,
+                    1.0
+                )
+
+                image = cv2.warpAffine(
+                    image,
+                    M,
+                    (w, h)
+                )
+
+                mask = cv2.warpAffine(
+                    mask,
+                    M,
+                    (w, h)
+                )
 
         image = image / 255.0
         mask = mask / 255.0
