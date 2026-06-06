@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from dataset import BoneDataset
-from unet import UNet
+import segmentation_models_pytorch as smp
 from hausdorff import hausdorff_distance
 
 
@@ -11,14 +11,22 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 dataset = BoneDataset(
     image_dir="../data/images",
-    mask_dir="../data/full_masks"
+    mask_dir="../data/full_masks",
+    augment=False
 )
 
 image, mask = dataset[0]
 
 input_image = image.unsqueeze(0).to(device)
 
-model = UNet().to(device)
+
+
+model = smp.Unet(
+    encoder_name="resnet34",
+    encoder_weights=None,
+    in_channels=3,
+    classes=1
+).to(device)
 
 model.load_state_dict(
     torch.load("unet_val.pth", map_location=device)
