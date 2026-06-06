@@ -34,38 +34,46 @@ class UNet(nn.Module):
         self.down2 = DoubleConv(64, 128)
         self.pool2 = nn.MaxPool2d(2)
 
-        self.bottleneck = DoubleConv(128, 256)
+        self.down3 = DoubleConv(128, 256)
+        self.pool3 = nn.MaxPool2d(2)
 
-        self.up1 = nn.ConvTranspose2d(256, 128, 2, stride=2)
-        self.conv1 = DoubleConv(256, 128)
+        self.bottleneck = DoubleConv(256, 512)
 
-        self.up2 = nn.ConvTranspose2d(128, 64, 2, stride=2)
-        self.conv2 = DoubleConv(128, 64)
+        self.up1 = nn.ConvTranspose2d(512, 256, 2, stride=2)
+        self.conv1 = DoubleConv(512, 256)
+
+        self.up2 = nn.ConvTranspose2d(256, 128, 2, stride=2)
+        self.conv2 = DoubleConv(256, 128)
+
+        self.up3 = nn.ConvTranspose2d(128, 64, 2, stride=2)
+        self.conv3 = DoubleConv(128, 64)
 
         self.final = nn.Conv2d(64, 1, kernel_size=1)
 
     def forward(self, x):
-
         x1 = self.down1(x)
         p1 = self.pool1(x1)
 
         x2 = self.down2(p1)
         p2 = self.pool2(x2)
 
-        b = self.bottleneck(p2)
+        x3 = self.down3(p2)
+        p3 = self.pool3(x3)
+
+        b = self.bottleneck(p3)
 
         u1 = self.up1(b)
-
-        u1 = torch.cat([u1, x2], dim=1)
-
+        u1 = torch.cat([u1, x3], dim=1)
         u1 = self.conv1(u1)
 
         u2 = self.up2(u1)
-
-        u2 = torch.cat([u2, x1], dim=1)
-
+        u2 = torch.cat([u2, x2], dim=1)
         u2 = self.conv2(u2)
 
-        out = self.final(u2)
+        u3 = self.up3(u2)
+        u3 = torch.cat([u3, x1], dim=1)
+        u3 = self.conv3(u3)
+
+        out = self.final(u3)
 
         return out
