@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import numpy as np
+import random
 
 from sklearn.model_selection import KFold
 
@@ -8,10 +9,31 @@ from torch.utils.data import DataLoader
 from torch.utils.data import Subset
 
 from dataset import BoneDataset
-from unet import UNet
+import segmentation_models_pytorch as smp
 
 from dice_score import dice_score
 from hausdorff import hausdorff_distance
+
+
+torch.manual_seed(42)
+np.random.seed(42)
+random.seed(42)
+
+
+def dice_loss(pred, target, smooth=1e-6):
+
+    pred = torch.sigmoid(pred)
+
+    pred = pred.view(-1)
+    target = target.view(-1)
+
+    intersection = (pred * target).sum()
+
+    dice = (2.0 * intersection + smooth) / (
+        pred.sum() + target.sum() + smooth
+    )
+
+    return 1 - dice
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -20,7 +42,8 @@ print("Device:", device)
 
 dataset = BoneDataset(
     image_dir="../data/images",
-    mask_dir="../data/full_masks"
+    mask_dir="../data/full_masks",
+    augment=True
 )
 
 indices = np.arange(len(dataset))
@@ -52,16 +75,21 @@ for fold, (train_idx, val_idx) in enumerate(kf.split(indices)):
         shuffle=False
     )
 
-    model = UNet().to(device)
+    model = smp.Unet(
+        encoder_name="resnet34",
+        encoder_weights="imagenet",
+        in_channels=3,
+        classes=1
+    ).to(device)
 
-    criterion = nn.BCEWithLogitsLoss()
+    bce_loss = nn.BCEWithLogitsLoss()
 
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=0.0001
     )
 
-    epochs = 3
+    epochs = 10
 
     for epoch in range(epochs):
 
@@ -74,7 +102,11 @@ for fold, (train_idx, val_idx) in enumerate(kf.split(indices)):
 
             outputs = model(images)
 
-            loss = criterion(outputs, masks)
+            bce = bce_loss(outputs, masks)
+
+            dice = dice_loss(outputs, masks)
+
+            loss = bce + dice
 
             optimizer.zero_grad()
 
@@ -160,3 +192,4 @@ with open("../reports/cross_validation_results.txt", "w") as file:
     file.write(
         f"Average Hausdorff Distance: {final_hd:.4f}\n"
     )
+
