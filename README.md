@@ -103,8 +103,11 @@ The model was evaluated using:
 Detailed fold results are available in:
 
 ```text
+reports/cross_validation_results_baseline.txt
 reports/cross_validation_results.txt
 ```
+
+The baseline cross-validation results are preserved for comparison purposes.
 
 ## Training / Validation Performance
 
@@ -137,6 +140,8 @@ Additionally, the model achieved a **Validation Dice Score of 0.9353** using an 
 
 These results demonstrate strong segmentation accuracy and good generalization performance for bone segmentation in X-ray images.
 
+The baseline model results and prediction outputs are preserved in the repository to document the performance improvements achieved through transfer learning, data augmentation, and training pipeline enhancements.
+
 ## Project Structure
 
 ```text
@@ -151,6 +156,7 @@ bone-segmentation/
 │   └── prediction_result.png
 │
 ├── reports/
+│   ├── cross_validation_results_baseline.txt
 │   └── cross_validation_results.txt
 │
 ├── src/
